@@ -244,6 +244,43 @@ def delete_recipe(recipe_id):
     recipes.remove({'_id': ObjectId(recipe_id)})
     return redirect(url_for('my_recipes',page=1, page_title='My Recipes at Lemon & Ginger, Recipe Finder'))
   
+@app.route('/my_recipes/<page>', methods=['GET'])
+def my_recipes(page):
+    username=session.get('username')
+    user = userDB.find_one({'username' : username})
+    
+    #Count the number of recipes in the Database
+    all_recipes = recipes.find({'author_name': username}).sort([('date_time', pymongo.DESCENDING), ('_id', pymongo.ASCENDING)]) 
+    count_recipes = all_recipes.count()
+    #Variables for Pagination
+    offset = (int(page) - 1) * 6
+    limit = 6
+    total_no_of_pages = int(math.ceil(count_recipes/limit))
+    recipe_pages = recipes.find({'author_name': username}).sort([("date_time", pymongo.DESCENDING), 
+                    ("_id", pymongo.ASCENDING)]).skip(offset).limit(limit)
+  
+    return render_template('my_recipes.html',
+    recipes=recipe_pages.sort('date_time',pymongo.DESCENDING), count_recipes=count_recipes, 
+    total_no_of_pages=total_no_of_pages, page=page, author_name = username,
+    page_title='My Recipes at Lemon & Ginger, Recipe Finder', recipeCategory=recipeCategory.find())
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# Individual Recipe Page                                                                                   #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+    
+@app.route('/recipe_page/<recipe_id>', methods=['GET'])
+def recipe_page(recipe_id):
+    username=session.get('username')
+    logged_in=session.get('logged_in')
+    user = userDB.find_one({'username' : username}) 
+    if not user:
+        return render_template('recipe.html', recipe=recipes.find_one({'_id': ObjectId(recipe_id)}), 
+        recipeCategory=recipeCategory.find(), recipe_id = recipe_id,  page=1)
+    else:      
+        recipe_rated_by_author = user['recipes_rated']
+        return render_template('recipe.html', recipe=recipes.find_one({'_id': ObjectId(recipe_id)}), 
+        recipeCategory=recipeCategory.find(), recipe_id = recipe_id, recipe_rated_by_author=recipe_rated_by_author, 
+        user=user, page=1, page_title='Recipe at Lemon & Ginger, Recipe Finder')
 
                                  
                                      
