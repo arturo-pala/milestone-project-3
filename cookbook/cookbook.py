@@ -35,3 +35,50 @@ def index():
 def get_recipes():
     return render_template('get_recipes.html', recipes = recipes.find().sort('date_time',pymongo.DESCENDING), 
                             recipeCategory=recipeCategory.find())
+
+@app.route('/register')
+def register():
+    return render_template('register.html', recipes=recipes.find(), 
+        recipeCategory=recipeCategory.find(), page=1, page_title='Register at Lemon & Ginger, Recipe Finder')
+
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=30)
+    author_name = request.form.get('author_name')
+    username = request.form.get('username').lower()
+    password = generate_password_hash(request.form.get('password'))    
+    session['username'] = username
+    user = userDB.find_one({'username' : username})
+    
+    if user is None:
+        userDB.insert_one({
+            'author_name': author_name,
+            'username': username,
+            'password': password,
+            'recipes_rated':[]
+        })
+        session['logged_in'] = True
+        flash('Welcome to Lemon & Ginger ' + author_name)
+        return signin()
+    else:
+        session['logged_in'] = False
+        flash('Username already exists, please try again.')
+    return register()
+
+
+@app.route('/signin')
+def signin():
+    tags = recipes.distinct("recipe_tags")
+    random.shuffle(tags)
+    #Count the number of recipes for the featured slider
+    featured_recipes = recipes.find({'featured_recipe': 'on'})
+    count_featured_recipes = featured_recipes.count() 
+    if not session.get('logged_in'):
+        return render_template('login.html', recipeCategory=recipeCategory.find(), tags=tags, page=1, 
+        page_title='Login at Lemon & Ginger Recipe Finder', count_featured_recipes=count_featured_recipes)
+    else:
+        return render_template('index.html', recipes=recipes.find().sort('date_time',pymongo.DESCENDING), 
+        recipeCategory=recipeCategory.find(), tags=tags, page=1, page_title='Login at Lemon & Ginger, Recipe Finder', 
+        count_featured_recipes=count_featured_recipes)
