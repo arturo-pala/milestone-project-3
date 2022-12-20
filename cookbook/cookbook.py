@@ -282,5 +282,60 @@ def recipe_page(recipe_id):
         recipeCategory=recipeCategory.find(), recipe_id = recipe_id, recipe_rated_by_author=recipe_rated_by_author, 
         user=user, page=1, page_title='Recipe at Lemon & Ginger, Recipe Finder')
 
-                                 
+@app.route('/search_keyword', methods=['POST'])
+def receive_keyword():
+    return redirect(url_for('search_keyword', keyword=request.form.get('keyword'), page=1)) 
+    
+    
+@app.route('/search_keyword/<keyword>/<page>', methods=['GET'])
+def search_keyword(keyword, page):
+    recipes.create_index([('recipe_name', 'text'), ('recipe_ingredients', 'text'), ('recipe_category_name','text')])        
+    
+    #Count the number of recipes in the Database
+    all_recipes = recipes.find({'$text': {'$search': keyword}}).sort([('date_time', pymongo.DESCENDING), ('_id', pymongo.ASCENDING)]) 
+    count_recipes = all_recipes.count()
+    
+    #Variables for Pagination
+    offset = (int(page) - 1) * 6
+    limit = 6
+    total_no_of_pages = int(math.ceil(count_recipes/limit))
+    
+    recipe_pages = recipes.find({'$text': {'$search': keyword}}).sort([("date_time", pymongo.DESCENDING), 
+                    ("_id", pymongo.ASCENDING)]).skip(offset).limit(limit)
+                    
+    return render_template('search_by_keyword.html', keyword=keyword, 
+        search_results = recipe_pages.sort('date_time',pymongo.DESCENDING), 
+        recipeCategory=recipeCategory.find(), count_recipes=count_recipes, 
+        total_no_of_pages=total_no_of_pages, page=page, page_title='Search Results, Lemon & Ginger, Recipe Finder')
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# Searching Tags                                                                                           #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+@app.route('/search_tag', methods=['GET'])
+def receive_tag():
+    return redirect(url_for('search_tag', keyword=request.form.get('tag'), page=1)) 
+    
+    
+@app.route('/search_tag/<tag>/<page>', methods=['GET'])
+def search_tag(tag, page):
+    recipes.create_index([('recipe_tags', pymongo.ASCENDING)])
+    #Count the number of recipes in the Database
+    all_recipes = recipes.find({'recipe_tags': tag}).sort([('date_time', pymongo.DESCENDING), ('_id', pymongo.ASCENDING)]) 
+    count_recipes = all_recipes.count()
+    
+    #Variables for Pagination
+    offset = (int(page) - 1) * 6
+    limit = 6
+    total_no_of_pages = int(math.ceil(count_recipes/limit))
+    
+    recipe_pages = recipes.find({'recipe_tags': tag}).sort([("date_time", pymongo.DESCENDING), 
+                    ("_id", pymongo.ASCENDING)]).skip(offset).limit(limit)
+                    
+    return render_template('search_by_tag.html', tag=tag, 
+        search_results = recipe_pages.sort('date_time',pymongo.DESCENDING), 
+        recipeCategory=recipeCategory.find(), count_recipes=count_recipes, 
+        total_no_of_pages=total_no_of_pages, page=page, page_title='Tag Results, Lemon & Ginger, Recipe Finder')     
+                                         
                                      
