@@ -166,3 +166,44 @@ def browse_recipes(recipe_category_name, page):
     recipes=recipe_pages, recipeCategory=recipeCategory.find(),count_recipes=count_recipes, total_no_of_pages=total_no_of_pages, 
     page=page, recipe_category_name=recipe_category_name, page_title='Lemon & Ginger, Recipe Finder', tags=tags)
     
+@app.route('/add_recipe', methods=['GET'] )
+def add_recipe():
+    username=session.get('username')
+    return render_template('add_recipe.html', recipes=recipes.find(), recipeCategory=recipeCategory.find(), 
+            skillLevel=skillLevel.find(), allergens=allergens.find(), userDB = userDB.find(), page=1, 
+            page_title='Add a recipe to Lemon & Ginger, Recipe Finder')
+
+  
+@app.route('/insert_recipe', methods=['POST'])
+def insert_recipe():
+    username=session.get('username')
+    user = userDB.find_one({'username' : username}) 
+    #Request Recipe tags and split into array based on comma
+    recipe_tags = request.form.get('recipe_tags')
+    recipe_tags_split = [x.strip() for x in recipe_tags.split(',')]
+    complete_recipe = {
+            'recipe_name': request.form.get('recipe_name'),
+            'recipe_description': request.form.get('recipe_description'),
+            'recipe_category_name': request.form.get('recipe_category_name'),
+            'allergen_type': request.form.getlist('allergen_type'),
+            'recipe_prep_time': request.form.get('recipe_prep_time'),
+            'recipe_cook_time': request.form.get('recipe_cook_time'),
+            'recipe_serves': request.form.get('recipe_serves'),
+            'recipe_difficulty': request.form.get('recipe_difficulty'),
+            'recipe_image' : request.form.get('recipe_image'),            
+            'recipe_ingredients':  request.form.getlist('recipe_ingredients'),
+            'recipe_method':  request.form.getlist('recipe_method'),
+            'featured_recipe':  request.form.get('featured_recipe'),
+            'date_time': datetime.now(),
+            'author_name': user['username'],
+            'ratings':[
+                    {'overall_ratings': 0.0,
+                    'total_ratings': 0,
+                    'no_of_ratings':0
+                    }
+                ],
+            'recipe_tags': recipe_tags_split
+        }   
+    recipes.insert_one(complete_recipe)
+    return redirect(url_for('my_recipes',page=1, page_title='My Recipes at Lemon & Ginger, Recipe Finder'))
+        
