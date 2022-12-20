@@ -125,3 +125,24 @@ def logout():
     recipeCategory=recipeCategory.find(),tags = tags, page=1, page_title='Logout of Lemon & Ginger, Recipe Finder',
     count_featured_recipes=count_featured_recipes)  
     
+@app.route('/all_recipes/<page>', methods=['GET'])
+def all_recipes(page):
+    tags = recipes.distinct("recipe_tags")
+    random.shuffle(tags)
+    #Count the number of recipes in the Database
+    all_recipes = recipes.find().sort([('date_time', pymongo.DESCENDING), ('_id', pymongo.ASCENDING)]) 
+    count_recipes = all_recipes.count()
+    
+    #Variables for Pagination
+    offset = (int(page) - 1) * 6
+    limit = 6
+    
+    recipe_pages = recipes.find().sort([("date_time", pymongo.DESCENDING), 
+                    ("_id", pymongo.ASCENDING)]).skip(offset).limit(limit)
+    total_no_of_pages = int(math.ceil(count_recipes/limit))
+   
+    return render_template('all_recipes.html',
+    recipes=recipe_pages, recipeCategory=recipeCategory.find(),count_recipes=count_recipes, total_no_of_pages=total_no_of_pages, 
+    page=page, page_title='All Recipes at Lemon & Ginger, Recipe Finder', tags=tags)
+
+    
