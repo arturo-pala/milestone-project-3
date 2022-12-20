@@ -338,4 +338,52 @@ def search_tag(tag, page):
         recipeCategory=recipeCategory.find(), count_recipes=count_recipes, 
         total_no_of_pages=total_no_of_pages, page=page, page_title='Tag Results, Lemon & Ginger, Recipe Finder')     
                                          
+@app.route('/recipe_rating/<recipe_id>', methods=['POST'])
+def recipe_rating(recipe_id):
+    username=session.get('username')
+    user = userDB.find_one({'username' : username}) 
+    new_rating = request.form['new_rating']
+    recipe = recipes.find_one({'_id': ObjectId(recipe_id)})
+
+    for rating in recipe['ratings']:
+        overall_rating = rating['overall_ratings']
+        total_rating = rating['total_ratings']
+        no_of_ratings = rating['no_of_ratings']
+        #Calculation for figuring out weighted rating
+        rating = (((int(overall_rating * total_rating) + int(new_rating)) / (int(total_rating)+1)))
+        rating = (round(rating,1))
+    
+    recipes.update( {'_id': ObjectId(recipe_id)},
+        {'$set':{
+            'ratings': [
+                {
+                    'total_ratings': int(total_rating) + int(new_rating),
+                    'overall_ratings': rating,
+                    'no_of_ratings': no_of_ratings + 1
+                }
+            ]}
+        })
+        
+    userDB.update({"username": username},
+                {'$addToSet': 
+                {'recipes_rated' : recipe_id}}) 
+    return redirect(url_for('recipe_page', recipe_id = recipe_id, page_title='Recipe at Lemon & Ginger, Recipe Finder'))
                                      
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html',recipeCategory=recipeCategory.find(), page=1, page_title='404 Error Page, Lemon & Ginger'), 404
+
+
+@app.errorhandler(500)
+def something_wrong(error):
+    return render_template('500.html',recipeCategory=recipeCategory.find(), page=1, page_title='500 Error Page, Lemon & Ginger'), 500
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# Development/Production environment test for debug                                                        #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+if __name__ == '__main__':
+    app.run(host=os.environ.get('IP'),
+            port=int(os.environ.get('PORT')),
+            debug=False)
