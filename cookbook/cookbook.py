@@ -207,3 +207,33 @@ def insert_recipe():
     recipes.insert_one(complete_recipe)
     return redirect(url_for('my_recipes',page=1, page_title='My Recipes at Lemon & Ginger, Recipe Finder'))
         
+@app.route('/edit_recipe/<recipe_id>')
+def edit_recipe(recipe_id):
+    return render_template('edit_recipe.html', recipeCategory=recipeCategory.find(), 
+            allergens=allergens.find(), skillLevel=skillLevel.find(), page=1, 
+            page_title='Edit Recipe on Lemon & Ginger, Recipe Finder',
+            recipes=recipes.find_one({'_id': ObjectId(recipe_id)}))
+            
+@app.route('/update_recipe/<recipe_id>', methods=['POST'])
+def update_recipe(recipe_id):
+    recipe_tags = request.form.get('recipe_tags')
+    recipe_tags_split = [x.strip() for x in recipe_tags.split(',')]
+    recipes.update( {'_id': ObjectId(recipe_id)},
+        { 
+            '$set':{
+            'recipe_name': request.form.get('recipe_name'),
+            'recipe_description': request.form.get('recipe_description'),
+            'recipe_category_name': request.form.get('recipe_category_name'),
+            'allergen_type': request.form.getlist('allergen_type'),
+            'recipe_prep_time': request.form.get('recipe_prep_time'),
+            'recipe_cook_time': request.form.get('recipe_cook_time'),
+            'recipe_serves': request.form.get('recipe_serves'),
+            'recipe_difficulty': request.form.get('recipe_difficulty'),
+            'recipe_image' : request.form.get('recipe_image'),            
+            'recipe_ingredients':  request.form.getlist('recipe_ingredients'),
+            'recipe_method':  request.form.getlist('recipe_method'),
+            'featured_recipe':  request.form.get('featured_recipe'),
+            'recipe_tags': recipe_tags_split
+            }
+        })    
+    return redirect(url_for('my_recipes',page=1, page_title='My Recipes at Lemon & Ginger, Recipe Finder'))       
