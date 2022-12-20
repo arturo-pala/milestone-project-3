@@ -237,3 +237,13 @@ def update_recipe(recipe_id):
             }
         })    
     return redirect(url_for('my_recipes',page=1, page_title='My Recipes at Lemon & Ginger, Recipe Finder'))       
+
+                                     
+@app.route('/delete_recipe/<recipe_id>', methods=['POST'])
+def delete_recipe(recipe_id):
+    recipes.remove({'_id': ObjectId(recipe_id)})
+    return redirect(url_for('my_recipes',page=1, page_title='My Recipes at Lemon & Ginger, Recipe Finder'))
+  
+
+                                 
+                                     
